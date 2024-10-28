@@ -153,14 +153,14 @@ async def login(page):
     await asyncio.sleep(random.uniform(1, 1.5))  
 
     # Fill in the login details  
-    await page.fill('input[name="username"]', "passionman724@gmail.com") 
+    await page.fill('input[name="username"]', "mudungodadanushka@gmail.com") 
     await asyncio.sleep(random.uniform(1, 1.5))   
-    await page.fill('input[name="password"]', "M@nunited0")  
+    await page.fill('input[name="password"]', "MuduDanu##")
     await asyncio.sleep(random.uniform(1, 1.5))  
     
     # Click the login button  
     await page.click('button[type="submit"]')  
-    await page.wait_for_load_state("networkidle", timeout = 30000)  
+    await page.wait_for_load_state("networkidle", timeout = 60000)  
 
     # Wait for and click the "Proceed" button if it appears  
     try:  
@@ -177,12 +177,12 @@ async def login(page):
 async def get_basic_info(page):
     sale_date = sale_amount = ""
     try:
-        sale_date = await page.text_content("div:has-text('Sale Date') + div", timeout = 5000)  
+        sale_date = await page.text_content("div:has-text('Sale Date') + div", timeout = 3000)  
     except Exception as e:
         print(f"Error occured while getting sale_date - {e}")
 
     try:
-        sale_amount = await page.text_content("div:has-text('Sale Amount') + div", timeout = 5000)  
+        sale_amount = await page.text_content("div:has-text('Sale Amount') + div", timeout = 3000)  
     except Exception as e:
         print(f"Error occured while getting sale_amount - {e}")
 
@@ -253,8 +253,9 @@ async def get_lien_list(page):
         await asyncio.sleep(1)
 
         # Find all lien sections within the selected tab panel  
-        lien_sections = await page.query_selector_all('.src-app-Property-Detail-style__E5HV8__page')  
-
+        lien_sections = await page.query_selector_all('.src-app-Property-Detail-style__E5HV8__page:not(.src-app-Property-Detail-style__E5HV8__page .src-app-Property-Detail-style__E5HV8__page)')  
+        print(len(lien_sections))  
+        lien_info_case1 = {}
         for panel in lien_sections:  
             # Initialize a dictionary for each lien  
             lien_info = {}  
@@ -272,15 +273,23 @@ async def get_lien_list(page):
                     label = await label_element.inner_text() if label_element else ""  
                     value = await value_element.inner_text() if value_element else ""  
                     lien_info[label.strip()] = value.strip()  
+                    lien_info_case1[label.strip()] = value.strip()  
 
             # Add each lien's dictionary to the list  
             lien_list.append(lien_info)  
+
+            if len(lien_sections) == 3:
+                lien_list = []
+                lien_list.append(lien_info_case1)
+
             print(Fore.BLUE + f"Extracted info successfully!!!" + Fore.RESET)
 
     except Exception as e:  
         print(f"Exception has occurred while getting lien_list: {e}")  
 
     await page.wait_for_load_state("networkidle", timeout = 10000)  
+    for lien in lien_list:
+        print(lien)
     return lien_list  
 
 async def get_divorce_list(page):
@@ -386,7 +395,7 @@ async def main():
 
             # Split the string by commas to form a list of IDs  
             ids = [id.strip() for id in cleaned_line.split(',')]  
-            num = 420
+            num = 588
             # Initialize num if it's not already set elsewhere  
             for id in ids:  
                 num += 1  
@@ -394,7 +403,6 @@ async def main():
                 success = False  # Track success status for each id  
                 while retry_count < 2 and not success:  # Limit retries to avoid infinite loop  
                     try:  
-                        id = 1736402953
                         await extract_info(page, num, id)  
                         success = True  # Mark as successful if no exception happens  
                         if (num % 50 == 0):
@@ -404,8 +412,6 @@ async def main():
                                 print(Fore.GREEN +  "Successfully saved to group" + Fore.RESET)
                             except Exception as e:  
                                 print(Fore.GREEN +  f"Exception has occurred while Saving to Group: {e}."+ Fore.RESET)
-                            if (id == 1736361394):
-                                raise
                     except Exception as e:  
                         print(f"Exception has occurred while extracting info: {e}. Retrying the same ID.")  
                         retry_count += 1  
@@ -417,7 +423,7 @@ async def main():
                 if not success:  
                     print(f"Failed to extract info for ID {id} after {retry_count} attempts.")
 
-                if (num % 70 == 0):
+                if (num % 50 == 0):
                     raise
 
         await browser.close()
