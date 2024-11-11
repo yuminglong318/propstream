@@ -11,7 +11,7 @@ from colorama import init, Fore
 init(autoreset=True) 
 current_header = []
 
-def save_values_to_csv_without_lien(num, id, sale_date, sale_amount, list1, list2, file_path='output.csv'):  
+def save_values_to_csv_without_lien(num, id, sale_date, sale_amount, list1, list2, file_path='divorce.csv'):  
     if sale_date == "" and sale_amount == "" and list1 == [] and list2 == [] :
         raise ValueError("Both sale_date and sale_amount must be provided")
 
@@ -54,7 +54,7 @@ def save_values_to_csv_without_lien(num, id, sale_date, sale_amount, list1, list
 
             writer.writerow(row)
 
-def save_values_to_csv(num, id, sale_date, sale_amount, list1, list2, list3, file_path='output.csv'):  
+def save_values_to_csv(num, id, sale_date, sale_amount, list1, list2, list3, file_path='divorce.csv'):  
     # Declare lists and all_keys of table headers
     list1_keys = ["Status Date", "Price", "Days on Market", "Listing ID", "Listing Type"]  
     list2_keys = ["listingDate", "status", "amount", "pricePerSquareFoot", "daysOnMarket", "agentName", "brokerageName", "mlsNumber"]
@@ -129,6 +129,81 @@ def save_values_to_csv(num, id, sale_date, sale_amount, list1, list2, list3, fil
 
             writer.writerow(row)  
 
+def save_values_to_csv_with_divorce(num, id, sale_date, sale_amount, list1, list2, list3, file_path='divorce.csv'):  
+    # Declare lists and all_keys of table headers
+    list1_keys = ["Status Date", "Price", "Days on Market", "Listing ID", "Listing Type"]  
+    list2_keys = ["listingDate", "status", "amount", "pricePerSquareFoot", "daysOnMarket", "agentName", "brokerageName", "mlsNumber"]
+
+    dynamic_keys = set()  
+    list3_keys = {key for d in list3 for key in d.keys()} if list3 else set()  
+    dynamic_keys.update(list3_keys)
+    list3_keys = list(dynamic_keys)
+
+    all_keys = ['No', 'id', 'sale_date', 'sale_amount'] + list1_keys + list2_keys + list3_keys
+
+    # Import divorce_current_header if it exists
+    divorce_current_header = []
+    file_exists = os.path.exists("divorce_current_header.txt")
+    if file_exists:
+        with open('divorce_current_header.txt', 'r') as file:  
+            content = file.read().strip()  # Read and strip to remove any surrounding whitespace or newline  
+            try:  
+                divorce_current_header = ast.literal_eval(content)  
+            except (ValueError, SyntaxError) as e:  
+                print(f"Error converting file content to list: {e}")  
+
+    # Read existing headers if file exists to update them with new keys for current header  
+    file_exists = os.path.exists(file_path)    
+    if file_exists:  
+        with open(file_path, mode='r', newline='') as file:  
+            existing_headers = next(csv.reader(file))  
+            all_keys = list(dict.fromkeys(existing_headers + divorce_current_header + all_keys)) 
+    
+    for key in all_keys:
+        if key not in divorce_current_header:
+            divorce_current_header.append(key)
+            
+    with open('divorce_current_header.txt', 'w') as file:  
+        file.write(str(divorce_current_header))  
+
+    # Write the header only if the file doesn't exist or new keys are detected
+    with open(file_path, mode='w' if not file_exists else 'a', newline='') as file:  
+        writer = csv.DictWriter(file, fieldnames = divorce_current_header) 
+        if not file_exists or not file_exists and dynamic_keys:  
+            writer.writeheader()  
+ 
+        # Prepare the first row with static values and elements from list1  
+        first_row = {key: '' for key in divorce_current_header}  
+        first_row['No'] = num  
+        first_row['id'] = id  
+        first_row['sale_date'] = sale_date  
+        first_row['sale_amount'] = sale_amount 
+        
+        if list1:
+            first_row["Status Date"] = list1[0]
+            first_row["Price"] = list1[1]
+            first_row["Days on Market"] = list1[2]
+            first_row["Listing ID"] = list1[3]
+            first_row["Listing Type"] = list1[4] 
+        
+        # Write initial static data and make placeholders for dynamic parts  
+        writer.writerow(first_row)
+
+        # Determine the maximum length of list2 and list3 to iterate through  
+        max_length = max(len(list2), len(list3))  
+
+        for i in range(max_length):  
+            row = {key: '' for key in divorce_current_header}  
+            # Use data from list2 if available  
+            if i < len(list2):  
+                row.update(list2[i])  
+
+            # Use data from list3 if available  
+            if i < len(list3):  
+                row.update(list3[i])  
+
+            writer.writerow(row)  
+
 async def manipulate_request(route):  
     request = route.request  
     headers = {  
@@ -153,9 +228,9 @@ async def login(page):
     await asyncio.sleep(random.uniform(1, 1.5))  
 
     # Fill in the login details  
-    await page.fill('input[name="username"]', "mudungodadanushka@gmail.com") 
+    await page.fill('input[name="username"]', "thorinthorin@gmail.com") 
     await asyncio.sleep(random.uniform(1, 1.5))   
-    await page.fill('input[name="password"]', "MuduDanu##")
+    await page.fill('input[name="password"]', "Wbmr*7*kpJWP*K4") 
     await asyncio.sleep(random.uniform(1, 1.5))  
     
     # Click the login button  
@@ -292,41 +367,99 @@ async def get_lien_list(page):
         print(lien)
     return lien_list  
 
-async def get_divorce_list(page):
-    divorce_list = []
-    try:
-        await page.click("li:has-text('Divorce Details')")  
-        court_case_number = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=0')  
-        document_number = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=1')  
-        judgment_entry_date = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=2')  
-        recording_book_page = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=3')  
-        recording_date = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=4')  
-        divorce_list = [court_case_number, document_number, judgment_entry_date, recording_book_page, recording_date]
-        print(divorce_list)
-    except Exception as e:
-        print(f"Exception occured while getting divorce list as - {e}")
-    
-    await page.wait_for_load_state("networkidle", timeout = 10000)
-    return divorce_list
+async def get_divorce_list(page):  
+    divorce_list = []  
+    try:  
+        await page.click("li:has-text('Divorce Details')")      
+        await page.wait_for_load_state("networkidle", timeout = 10000)  
+        await asyncio.sleep(1)
 
-async def get_bankruptcy_list(page):
-    bankruptcy_list = []
-    try:
-        await page.click("li:has-text('Bankruptcy Details')")
-        case_number = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=0')  
-        chapter = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=1')  
-        county_name = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=2')  
-        discharge_date = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=3')  
-        meeting_date_time = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=4')  
-        original_chapter = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=5')  
-        document_type = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=6')  
-        recording_date = await page.inner_text('.src-components-GroupInfo-style__sbtoP__value >> nth=7')  
-        bankruptcy_list = [case_number, chapter, county_name, discharge_date, meeting_date_time, original_chapter, document_type, recording_date]
-    except Exception as e:
-        print(f"Exception occured while getting bankruptcy list as - {e}")
-    
+        # Find all divorce sections within the selected tab panel  
+        divorce_sections = await page.query_selector_all('.src-app-Property-Detail-style__E5HV8__page:not(.src-app-Property-Detail-style__E5HV8__page .src-app-Property-Detail-style__E5HV8__page)')  
+        print(len(divorce_sections))  
+        divorce_info_case1 = {}
+        for panel in divorce_sections:  
+            # Initialize a dictionary for each divorce  
+            divorce_info = {}  
+
+            # Find all rows within a section  
+            divorce_details = await panel.query_selector_all('.src-app-Property-Detail-style__JNLud__row')  
+
+            for detail in divorce_details:  
+                # Locate each label and value within the row  
+                label_elements = await detail.query_selector_all('.src-components-GroupInfo-style__FpyDf__label')  
+                value_elements = await detail.query_selector_all('.src-components-GroupInfo-style__sbtoP__value > div')  
+
+                # Assign label-value pairs to the dictionary  
+                for label_element, value_element in zip(label_elements, value_elements):  
+                    label = await label_element.inner_text() if label_element else ""  
+                    value = await value_element.inner_text() if value_element else ""  
+                    divorce_info[label.strip()] = value.strip()  
+                    divorce_info_case1[label.strip()] = value.strip()  
+
+            # Add each divorce's dictionary to the list  
+            divorce_list.append(divorce_info)  
+
+            if len(divorce_sections) == 3:
+                divorce_list = []
+                divorce_list.append(divorce_info_case1)
+
+            print(Fore.BLUE + f"Extracted info successfully!!!" + Fore.RESET)
+
+    except Exception as e:  
+        print(f"Exception has occurred while getting divorce_list: {e}")  
+
     await page.wait_for_load_state("networkidle", timeout = 10000)  
-    return bankruptcy_list
+    for divorce in divorce_list:
+        print(divorce)
+    return divorce_list  
+
+async def get_bankruptcy_list(page):  
+    bankruptcy_list = []  
+    try:  
+        await page.click("li:has-text('Bankruptcy Details')")      
+        await page.wait_for_load_state("networkidle", timeout = 10000)  
+        await asyncio.sleep(1)
+
+        # Find all bankruptcy sections within the selected tab panel  
+        bankruptcy_sections = await page.query_selector_all('.src-app-Property-Detail-style__E5HV8__page:not(.src-app-Property-Detail-style__E5HV8__page .src-app-Property-Detail-style__E5HV8__page)')  
+        print(len(bankruptcy_sections))  
+        bankruptcy_info_case1 = {}
+        for panel in bankruptcy_sections:  
+            # Initialize a dictionary for each bankruptcy  
+            bankruptcy_info = {}  
+
+            # Find all rows within a section  
+            bankruptcy_details = await panel.query_selector_all('.src-app-Property-Detail-style__JNLud__row')  
+
+            for detail in bankruptcy_details:  
+                # Locate each label and value within the row  
+                label_elements = await detail.query_selector_all('.src-components-GroupInfo-style__FpyDf__label')  
+                value_elements = await detail.query_selector_all('.src-components-GroupInfo-style__sbtoP__value > div')  
+
+                # Assign label-value pairs to the dictionary  
+                for label_element, value_element in zip(label_elements, value_elements):  
+                    label = await label_element.inner_text() if label_element else ""  
+                    value = await value_element.inner_text() if value_element else ""  
+                    bankruptcy_info[label.strip()] = value.strip()  
+                    bankruptcy_info_case1[label.strip()] = value.strip()  
+
+            # Add each bankruptcy's dictionary to the list  
+            bankruptcy_list.append(bankruptcy_info)  
+
+            if len(bankruptcy_sections) == 3:
+                bankruptcy_list = []
+                bankruptcy_list.append(bankruptcy_info_case1)
+
+            print(Fore.BLUE + f"Extracted info successfully!!!" + Fore.RESET)
+
+    except Exception as e:  
+        print(f"Exception has occurred while getting bankruptcy_list: {e}")  
+
+    await page.wait_for_load_state("networkidle", timeout = 10000)  
+    for bankruptcy in bankruptcy_list:
+        print(bankruptcy)
+    return bankruptcy_list 
 
 async def save_property_to_group(page):
     await page.click('.src-app-Property-Detail-style__LF8c8__buttons >> text="Save"')  
@@ -347,10 +480,12 @@ async def extract_info(page, num, id):
     sale_date, sale_amount = await get_basic_info(page)
     await asyncio.sleep(random.uniform(1, 1.5))  
     property_list, mls_history_list = await get_mls_list(page)    
+    # await asyncio.sleep(random.uniform(1, 1.5))  
+    # lien_list = await get_lien_list(page)
+    # await asyncio.sleep(random.uniform(1, 1.5))  
+    # bankruptcy_list = await get_bankruptcy_list(page)
     await asyncio.sleep(random.uniform(1, 1.5))  
-    lien_list = await get_lien_list(page)
-    await asyncio.sleep(random.uniform(1, 1.5))  
-    # divorce_list = await get_divorce_list(page)
+    divorce_list = await get_divorce_list(page)  
     # await asyncio.sleep(1)
     # bankruptcy_list = await get_bankruptcy_list(page)
 
@@ -359,8 +494,9 @@ async def extract_info(page, num, id):
     # print(bankruptcy_list)
     # save_values_to_csv_without_lien(num, id, sale_date, sale_amount, property_list, mls_history_list)    
     # await asyncio.sleep(1)
-    save_values_to_csv(num, id, sale_date, sale_amount, property_list, mls_history_list, lien_list)
+    save_values_to_csv_with_divorce(num, id, sale_date, sale_amount, property_list, mls_history_list, divorce_list)
     print(Fore.RED + f"Extracted info for ID {id} - {num}" + Fore.RESET)
+    print("_________________________________________________________")
     await page.wait_for_load_state("networkidle", timeout = 30000) 
 
 async def main():  
@@ -385,20 +521,20 @@ async def main():
         await login(page)  
         await asyncio.sleep(1)
 
-        with open('ID/result.txt', 'r') as f:  
+        with open('ID/divorce_total.txt', 'r') as f:  
             # Read the content of the file  
             line = f.read().strip()  
 
-            # Remove square brackets and single quotes, then split by comma  
+            # Remove square brackets and single quotes, then splnum =it by comma  
             cleaned_line = line.strip('[]')  # Remove the outer brackets  
             cleaned_line = cleaned_line.replace("'", "")  # Remove single quotes  
 
             # Split the string by commas to form a list of IDs  
             ids = [id.strip() for id in cleaned_line.split(',')]  
-            num = 588
+            num = 150
             # Initialize num if it's not already set elsewhere  
             for id in ids:  
-                num += 1  
+                num += 1
                 retry_count = 0  # Track retry attempts for each id  
                 success = False  # Track success status for each id  
                 while retry_count < 2 and not success:  # Limit retries to avoid infinite loop  

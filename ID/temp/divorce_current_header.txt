@@ -1,0 +1,1 @@
+['No', 'id', 'sale_date', 'sale_amount', 'Status Date', 'Price', 'Days on Market', 'Listing ID', 'Listing Type', 'listingDate', 'status', 'amount', 'pricePerSquareFoot', 'daysOnMarket', 'agentName', 'brokerageName', 'mlsNumber', 'Document Number', 'Respondent Name', 'Petitioner Name', 'Recording Date', 'Court Case Number', 'Recording Book / Page', 'Judgment Entry Date']
